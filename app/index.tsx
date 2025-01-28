@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Modal, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, Modal, TouchableOpacity, Pressable } from 'react-native';
 import axios from 'axios';
 
 const App = () => {
@@ -34,15 +34,15 @@ const App = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Weather App</Text>
+    <View className='flex flex-col justify-center items-center'>
+      <Text className='text-2xl font-bold mb-4 'style={styles.poppinsRegular}>Weather App</Text>
       <TextInput
-        style={styles.input}
+        style={styles.poppinsRegular} className='border border-gray-300 rounded-md p-2 mb-4 w-full'
         placeholder="Enter city name"
         value={city}
         onChangeText={setCity}
       />
-      <Button title="Get Weather" onPress={fetchWeather} />
+      <Pressable className="bg-blue-500 text-white rounded-md px-4 py-2" onPress={fetchWeather} style={styles.poppinsRegular}>Get Weather</Pressable>
 
       {error && <Text style={styles.error}>{error}</Text>}
 
@@ -53,15 +53,17 @@ const App = () => {
         visible={isModalVisible}
         onRequestClose={closeModal}
       >
-        <View style={styles.modalOverlay}>
+        <View style={styles.modalOverlay} >
           <View style={styles.modalContent}>
             {weatherData && (
               <>
-                <Text style={styles.city}>{weatherData.name}, {weatherData.sys.country}</Text>
-                <Text style={styles.temp}>{weatherData.main.temp}°C</Text>
-                <Text style={styles.description}>{weatherData.weather[0].description}</Text>
+                <Text style={styles.poppinsRegular}>{weatherData.name}, {weatherData.sys.country}</Text>
+                <Text className='text-2xl font-bold' style={styles.poppinsRegular}>{weatherData.main.temp}°C</Text>
+                <Text style={styles.poppinsRegular}>{weatherData.weather[0].description}</Text>
                 <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-                  <Text style={styles.closeText}>Close</Text>
+                  <Text  className="w-full bg-blue-500 text-white rounded-md px-4 py-2"style={styles.poppinsRegular
+
+                  }>Close</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -121,16 +123,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textTransform: 'capitalize',
   },
-  closeButton: {
-    marginTop: 20,
-    backgroundColor: '#ff6347',
-    padding: 10,
-    borderRadius: 5,
-  },
+  // closeButton: {
+  //   marginTop: 20,
+  //   backgroundColor: '#ff6347',
+  //   padding: 10,
+  //   borderRadius: 5,
+  // },
   closeText: {
     color: 'white',
     fontSize: 16,
   },
+  poppinsRegular: {
+    fontFamily: 'poppinsRegular',
+
+},
+poppinsBold: {
+    fontFamily: 'poppinsBold',
+},
+poppinsMedium: {
+    fontFamily: 'poppinsMedium',
+},
+poppinsSemiBold: {
+    fontFamily: ' poppinsSemiBold',
+},
+poppinsExtraBold: {
+    fontFamily: 'poppinsExtraBold',
+},
 });
 
 export default App;
