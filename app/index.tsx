@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Modal, TouchableOpacity, Pressable } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Modal, TouchableOpacity, Pressable, ScrollView } from 'react-native';
 import axios from 'axios';
 
 const App = () => {
   const [city, setCity] = useState('');
   const [weatherData, setWeatherData] = useState(null);
+  const [hourlyForecastData, setHourlyForecastData] = useState([]);
+  const [dailyForecastData, setDailyForecastData] = useState([]);
   const [error, setError] = useState('');
   const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -15,12 +17,27 @@ const App = () => {
     }
 
     const API_KEY = 'fee4a8521008cfaa15374d867377664e'; 
-    const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`;
+    const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`;
 
     try {
-      const response = await axios.get(url);
-      setWeatherData(response.data);
+      const weatherResponse = await axios.get(weatherUrl);
+      const { coord } = weatherResponse.data;
+      setWeatherData(weatherResponse.data);
       setError('');
+
+      const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${coord.lat}&lon=${coord.lon}&appid=${API_KEY}&units=metric`;
+      const forecastResponse = await axios.get(forecastUrl);
+      const forecastData = forecastResponse.data.list;
+
+      // Extract hourly forecast for the next 24 hours (5 entries)
+      const hourlyForecast = forecastData.filter((item, index) => index < 5);
+
+      // Extract daily forecast (1 entry per day for the next 5 days)
+      const dailyForecast = forecastData.filter((item, index) => index % 8 === 0).slice(0, 5);
+
+      setHourlyForecastData(hourlyForecast);
+      setDailyForecastData(dailyForecast);
+
       setIsModalVisible(true); 
     } catch (err) {
       setError('Failed to fetch weather data');
@@ -31,13 +48,16 @@ const App = () => {
   const closeModal = () => {
     setIsModalVisible(false);
     setWeatherData(null); 
+    setHourlyForecastData([]);
+    setDailyForecastData([]);
   };
 
   return (
     <View className='flex flex-col justify-center items-center'>
-      <Text className='text-2xl font-bold mb-4 'style={styles.poppinsRegular}>Weather App</Text>
+      <Text className='text-2xl font-bold mb-4' style={styles.poppinsRegular}>Weather App</Text>
       <TextInput
-        style={styles.poppinsRegular} className='border border-gray-300 rounded-md p-2 mb-4 w-full'
+        style={styles.poppinsRegular}
+        className='border border-gray-300 rounded-md p-2 mb-4 w-full'
         placeholder="Enter city name"
         value={city}
         onChangeText={setCity}
@@ -53,17 +73,44 @@ const App = () => {
         visible={isModalVisible}
         onRequestClose={closeModal}
       >
-        <View style={styles.modalOverlay} >
+        <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             {weatherData && (
               <>
                 <Text style={styles.poppinsRegular}>{weatherData.name}, {weatherData.sys.country}</Text>
                 <Text className='text-2xl font-bold' style={styles.poppinsRegular}>{weatherData.main.temp}°C</Text>
                 <Text style={styles.poppinsRegular}>{weatherData.weather[0].description}</Text>
-                <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-                  <Text  className="w-full bg-blue-500 text-white rounded-md px-4 py-2"style={styles.poppinsRegular
+                <Text style={styles.poppinsRegular}>Humidity: {weatherData.main.humidity}%</Text>
+                <Text style={styles.poppinsRegular}>Wind Speed: {weatherData.wind.speed} m/s</Text>
+                
+                <Text style={styles.poppinsRegular}>Hourly Forecast:</Text>
+                <ScrollView horizontal={true}>
+                  <View style={styles.forecastContainer}>
+                    {hourlyForecastData.map((forecast, index) => (
+                      <View className='border border-gray-300 rounded-md p-2 mb-4 ' key={index} style={styles.forecastItem}>
+                        <Text style={styles.poppinsRegular}>{new Date(forecast.dt * 1000).toLocaleString()}</Text>
+                        <Text style={styles.poppinsRegular}>Temp: {forecast.main.temp}°C</Text>
+                        <Text style={styles.poppinsRegular}>{forecast.weather[0].description}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </ScrollView>
 
-                  }>Close</Text>
+                <Text style={styles.poppinsRegular}>Daily Forecast:</Text>
+                <ScrollView horizontal={true}>
+                  <View style={styles.forecastContainer}>
+                    {dailyForecastData.map((forecast, index) => (
+                      <View className='border border-gray-300 rounded-md p-2 mb-4 ' key={index} style={styles.forecastItem}>
+                        <Text style={styles.poppinsRegular}>{new Date(forecast.dt * 1000).toLocaleDateString()}</Text>
+                        <Text style={styles.poppinsRegular}>Temp: {forecast.main.temp}°C</Text>
+                        <Text style={styles.poppinsRegular}>{forecast.weather[0].description}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </ScrollView>
+
+                <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+                  <Text className="w-full bg-blue-500 text-white rounded-md px-4 py-2" style={styles.poppinsRegular}>Close</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -104,51 +151,51 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)', 
   },
   modalContent: {
-    width: 300,
-    padding: 20,
+    width: 400,
+    padding: 60,
     backgroundColor: 'white',
     borderRadius: 10,
     alignItems: 'center',
   },
-  city: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  forecastContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    
+    padding: 10,
+    width: 300,
   },
-  temp: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: '#ff6347',
+  forecastItem: {
+    margin: 5,
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+    alignItems: 'center',
   },
-  description: {
-    fontSize: 16,
-    textTransform: 'capitalize',
+  closeButton: {
+    marginTop: 20,
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 5,
   },
-  // closeButton: {
-  //   marginTop: 20,
-  //   backgroundColor: '#ff6347',
-  //   padding: 10,
-  //   borderRadius: 5,
-  // },
   closeText: {
     color: 'white',
     fontSize: 16,
   },
   poppinsRegular: {
     fontFamily: 'poppinsRegular',
-
-},
-poppinsBold: {
+  },
+  poppinsBold: {
     fontFamily: 'poppinsBold',
-},
-poppinsMedium: {
+  },
+  poppinsMedium: {
     fontFamily: 'poppinsMedium',
-},
-poppinsSemiBold: {
-    fontFamily: ' poppinsSemiBold',
-},
-poppinsExtraBold: {
+  },
+  poppinsSemiBold: {
+    fontFamily: 'poppinsSemiBold',
+  },
+  poppinsExtraBold: {
     fontFamily: 'poppinsExtraBold',
-},
+  },
 });
 
 export default App;
