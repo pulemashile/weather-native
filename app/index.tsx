@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Modal, TouchableOpacity, Pressable, ScrollView } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, Pressable } from 'react-native';
 import axios from 'axios';
 
 const App = () => {
@@ -8,7 +8,6 @@ const App = () => {
   const [hourlyForecastData, setHourlyForecastData] = useState([]);
   const [dailyForecastData, setDailyForecastData] = useState([]);
   const [error, setError] = useState('');
-  const [isModalVisible, setIsModalVisible] = useState(false);
 
   const fetchWeather = async () => {
     if (!city) {
@@ -37,86 +36,71 @@ const App = () => {
 
       setHourlyForecastData(hourlyForecast);
       setDailyForecastData(dailyForecast);
-
-      setIsModalVisible(true); 
     } catch (err) {
       setError('Failed to fetch weather data');
       setWeatherData(null);
     }
   };
 
-  const closeModal = () => {
-    setIsModalVisible(false);
-    setWeatherData(null); 
-    setHourlyForecastData([]);
-    setDailyForecastData([]);
+  const formatDate = (timestamp) => {
+    const date = new Date(timestamp * 1000);
+    const today = new Date();
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    const dayName = dayNames[date.getDay()];
+    const isToday = date.toDateString() === today.toDateString();
+
+    return isToday ? `Today (${dayName})` : dayName;
   };
 
   return (
-    <View className='flex flex-col justify-center items-center'>
-      <Text className='text-2xl font-bold mb-4' style={styles.poppinsRegular}>Weather App</Text>
+    <View style={styles.container}>
+      <Text className="text-2xl font-bold text-[#00b4d8] mb-3"  style={styles.poppinsRegular}>Weather App</Text>
       <TextInput
-        style={styles.poppinsRegular}
-        className='border border-gray-300 rounded-md p-2 mb-4 w-full'
+        className="border border-gray-300 rounded-md px-16 py-2 mb-4" style={styles.poppinsRegular}
         placeholder="Enter city name"
         value={city}
         onChangeText={setCity}
       />
-      <Pressable className="bg-blue-500 text-white rounded-md px-4 py-2" onPress={fetchWeather} style={styles.poppinsRegular}>Get Weather</Pressable>
+      <Pressable className="bg-[#00b4d8] text-white rounded-md px-4 py-2" onPress={fetchWeather} style={styles.buttonText}>Get Weather</Pressable>
 
       {error && <Text style={styles.error}>{error}</Text>}
 
-      {/* Modal to show weather details */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={isModalVisible}
-        onRequestClose={closeModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            {weatherData && (
-              <>
-                <Text style={styles.poppinsRegular}>{weatherData.name}, {weatherData.sys.country}</Text>
-                <Text className='text-2xl font-bold' style={styles.poppinsRegular}>{weatherData.main.temp}°C</Text>
-                <Text style={styles.poppinsRegular}>{weatherData.weather[0].description}</Text>
-                <Text style={styles.poppinsRegular}>Humidity: {weatherData.main.humidity}%</Text>
-                <Text style={styles.poppinsRegular}>Wind Speed: {weatherData.wind.speed} m/s</Text>
-                
-                <Text style={styles.poppinsRegular}>Hourly Forecast:</Text>
-                <ScrollView horizontal={true}>
-                  <View style={styles.forecastContainer}>
-                    {hourlyForecastData.map((forecast, index) => (
-                      <View className='border border-gray-300 rounded-md p-2 mb-4 ' key={index} style={styles.forecastItem}>
-                        <Text style={styles.poppinsRegular}>{new Date(forecast.dt * 1000).toLocaleString()}</Text>
-                        <Text style={styles.poppinsRegular}>Temp: {forecast.main.temp}°C</Text>
-                        <Text style={styles.poppinsRegular}>{forecast.weather[0].description}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </ScrollView>
+      {weatherData && (
+        <View style={styles.weatherContainer} className='ml-5'>
+          <Text style={styles.poppinsRegular}>{weatherData.name}, {weatherData.sys.country}</Text>
+          <Text style={styles.mainTemp}>{weatherData.main.temp}°C</Text>
+          <Text style={styles.poppinsRegular}>{weatherData.weather[0].description}</Text>
+          <Text style={styles.poppinsRegular}>Humidity: {weatherData.main.humidity}%</Text>
+          <Text style={styles.poppinsRegular}>Wind Speed: {weatherData.wind.speed} m/s</Text>
 
-                <Text style={styles.poppinsRegular}>Daily Forecast:</Text>
-                <ScrollView horizontal={true}>
-                  <View style={styles.forecastContainer}>
-                    {dailyForecastData.map((forecast, index) => (
-                      <View className='border border-gray-300 rounded-md p-2 mb-4 ' key={index} style={styles.forecastItem}>
-                        <Text style={styles.poppinsRegular}>{new Date(forecast.dt * 1000).toLocaleDateString()}</Text>
-                        <Text style={styles.poppinsRegular}>Temp: {forecast.main.temp}°C</Text>
-                        <Text style={styles.poppinsRegular}>{forecast.weather[0].description}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </ScrollView>
+          <Text style={styles.forecastHeader}>Hourly Forecast:</Text>
+          <ScrollView horizontal={true} style={styles.horizontalScroll}>
+            <View style={styles.forecastContainer} className='ml-20'>
+              {hourlyForecastData.map((forecast, index) => (
+                <View className='border border-gray-300 rounded-md p-2 mb-4 shadow-md ' key={index} style={styles.forecastItem}>
+                  <Text style={styles.poppinsRegular}>{formatDate(forecast.dt)} {new Date(forecast.dt * 1000).toLocaleTimeString()}</Text>
+                  <Text style={styles.poppinsRegular}>Temp: {forecast.main.temp}°C</Text>
+                  <Text style={styles.poppinsRegular}>{forecast.weather[0].description}</Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
 
-                <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-                  <Text className="w-full bg-blue-500 text-white rounded-md px-4 py-2" style={styles.poppinsRegular}>Close</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
+          <Text style={styles.forecastHeader}>Daily Forecast:</Text>
+          <ScrollView horizontal={true} style={styles.horizontalScroll}>
+            <View style={styles.forecastContainer} className='ml-20'>
+              {dailyForecastData.map((forecast, index) => (
+                <View className='border border-gray-300 rounded-md p-2 mb-4 shadow-md' key={index} style={styles.forecastItem}>
+                  <Text style={styles.poppinsRegular}>{formatDate(forecast.dt)} {new Date(forecast.dt * 1000).toLocaleDateString()}</Text>
+                  <Text style={styles.poppinsRegular}>Temp: {forecast.main.temp}°C</Text>
+                  <Text style={styles.poppinsRegular}>{forecast.weather[0].description}</Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
         </View>
-      </Modal>
+      )}
     </View>
   );
 };
@@ -127,6 +111,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    
   },
   header: {
     fontSize: 24,
@@ -140,29 +125,39 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginBottom: 10,
   },
+  buttonText: {
+    padding: 15,
+    color: 'white',
+    backgroundColor: '#00b4d8',
+    borderRadius: 5,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
   error: {
     color: 'red',
     marginTop: 10,
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
+  weatherContainer: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', 
+    marginBottom: 20,
+    
   },
-  modalContent: {
-    width: 400,
-    padding: 60,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    alignItems: 'center',
+  mainTemp: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginVertical: 10,
+  },
+  forecastHeader: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 20,
+  },
+  horizontalScroll: {
+    marginVertical: 10,
   },
   forecastContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    
-    padding: 10,
-    width: 300,
+    paddingLeft: 10,
   },
   forecastItem: {
     margin: 5,
@@ -170,16 +165,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     borderRadius: 5,
     alignItems: 'center',
-  },
-  closeButton: {
-    marginTop: 20,
-    backgroundColor: '#fff',
-    padding: 10,
-    borderRadius: 5,
-  },
-  closeText: {
-    color: 'white',
-    fontSize: 16,
   },
   poppinsRegular: {
     fontFamily: 'poppinsRegular',
